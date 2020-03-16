@@ -133,7 +133,7 @@ namespace Plugin.Geofence
                     CurrentRequestType = RequestType.Default;
                     if(IsMonitoring)
                     {
-                        StartMonitoring(Regions.Values.ToList());
+                        StartMonitoring(Regions);
                         System.Diagnostics.Debug.WriteLine(string.Format("{0} - {1}", CrossGeofence.Id, "Monitoring was restored"));
                     }
                 }
@@ -186,6 +186,33 @@ namespace Plugin.Geofence
                 } 
             });
             System.Diagnostics.Debug.WriteLine("End of IsLocationEnabled, clients should be created");
+        }
+
+        /// <summary>
+        /// Start monitoring
+        /// </summary>
+        /// <param name="regions"></param>
+        public void StartMonitoring(IReadOnlyDictionary<string, GeofenceCircularRegion> regions)
+        {
+            lock (Lock)
+            {
+                var regionList = regions.Values.ToList();
+                if (IsMonitoring)
+                {
+                    mGeofencingClient.RemoveGeofences(GeofenceTransitionPendingIntent).AddOnCompleteListener(this);
+                }
+
+                foreach (var region in regionList)
+                {
+                    if (!mRegions.ContainsKey(region.Id))
+                    {
+                        mRegions.Add(region.Id, region);
+                    }
+                }
+
+                RequestMonitoringStart();
+            }
+            System.Diagnostics.Debug.WriteLine("Monitoring has begun");
         }
 
         /// <summary>
@@ -707,6 +734,5 @@ namespace Plugin.Geofence
             CurrentRequestType = RequestType.Default;
             System.Diagnostics.Debug.WriteLine("Completed request");
         }
-
     }
 }

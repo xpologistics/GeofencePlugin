@@ -771,6 +771,9 @@ namespace Plugin.Geofence
           returnAction(CLLocationManager.Status == CLAuthorizationStatus.AuthorizedAlways);
       }
 
-
-  }
+        public void StartMonitoring(IReadOnlyDictionary<string, GeofenceCircularRegion> regions)
+        {
+            return;
+        }
+    }
 }

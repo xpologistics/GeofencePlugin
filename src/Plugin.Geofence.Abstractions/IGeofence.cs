@@ -34,11 +34,16 @@ namespace Plugin.Geofence.Abstractions
       /// </summary>
       /// <param name="regions"></param>
       void StartMonitoring(IList<GeofenceCircularRegion> regions);
+    /// <summary>
+    /// Start monitoring
+    /// </summary>
+    /// <param name="regions"></param>
+    void StartMonitoring(IReadOnlyDictionary<string, GeofenceCircularRegion> regions);
       /// <summary>
       /// Stops monitoring one region
       /// </summary>
       /// <param name="identifier"></param>
-      void StopMonitoring(string identifier);
+        void StopMonitoring(string identifier);
       /// <summary>
       /// Stops monitoring multiple regions
       /// </summary>

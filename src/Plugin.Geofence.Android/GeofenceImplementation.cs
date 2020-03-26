@@ -148,44 +148,52 @@ namespace Plugin.Geofence
 
         public void IsLocationEnabled(Action<bool> returnAction)
         {
-            InitializeGoogleAPI();
-            if(mGoogleApiClient == null || CheckPermissions() == false)
+            lock (Lock)
             {
-                returnAction(false);
-                return;
-            }
-            mFusedLocationProviderClient = LocationServices.GetFusedLocationProviderClient(Android.App.Application.Context);
-            mGeofencingClient = LocationServices.GetGeofencingClient(Application.Context);
-            mGeofenceList = new List<Android.Gms.Location.IGeofence>();
-
-            var locationRequestPriority = LocationRequest.PriorityBalancedPowerAccuracy;
-            switch (CrossGeofence.GeofencePriority)
-            {
-                case GeofencePriority.HighAccuracy:
-                    locationRequestPriority = LocationRequest.PriorityHighAccuracy;
-                    break;
-                case GeofencePriority.LowAccuracy:
-                    locationRequestPriority = LocationRequest.PriorityLowPower;
-                    break;
-                case GeofencePriority.LowestAccuracy:
-                    locationRequestPriority = LocationRequest.PriorityNoPower;
-                    break;
-            }
-            
-            mLocationRequest = new LocationRequest();
-            mLocationRequest.SetPriority(locationRequestPriority);
-            mLocationRequest.SetInterval(CrossGeofence.LocationUpdatesInterval);
-            mLocationRequest.SetFastestInterval(CrossGeofence.FastestLocationUpdatesInterval);
-
-            LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().AddLocationRequest(mLocationRequest);
-            var pendingResult = LocationServices.SettingsApi.CheckLocationSettings(mGoogleApiClient, builder.Build());
-            pendingResult.SetResultCallback((LocationSettingsResult locationSettingsResult) => {
-                if (locationSettingsResult != null)
+                InitializeGoogleAPI();
+                if (mGoogleApiClient == null || CheckPermissions() == false)
                 {
-                    returnAction(locationSettingsResult.Status.StatusCode <= CommonStatusCodes.Success);
-                } 
-            });
-            System.Diagnostics.Debug.WriteLine("End of IsLocationEnabled, clients should be created");
+                    returnAction(false);
+                    return;
+                }
+
+                mFusedLocationProviderClient =
+                    LocationServices.GetFusedLocationProviderClient(Android.App.Application.Context);
+                mGeofencingClient = LocationServices.GetGeofencingClient(Application.Context);
+                mGeofenceList = new List<Android.Gms.Location.IGeofence>();
+
+                var locationRequestPriority = LocationRequest.PriorityBalancedPowerAccuracy;
+                switch (CrossGeofence.GeofencePriority)
+                {
+                    case GeofencePriority.HighAccuracy:
+                        locationRequestPriority = LocationRequest.PriorityHighAccuracy;
+                        break;
+                    case GeofencePriority.LowAccuracy:
+                        locationRequestPriority = LocationRequest.PriorityLowPower;
+                        break;
+                    case GeofencePriority.LowestAccuracy:
+                        locationRequestPriority = LocationRequest.PriorityNoPower;
+                        break;
+                }
+
+                mLocationRequest = new LocationRequest();
+                mLocationRequest.SetPriority(locationRequestPriority);
+                mLocationRequest.SetInterval(CrossGeofence.LocationUpdatesInterval);
+                mLocationRequest.SetFastestInterval(CrossGeofence.FastestLocationUpdatesInterval);
+
+                LocationSettingsRequest.Builder builder =
+                    new LocationSettingsRequest.Builder().AddLocationRequest(mLocationRequest);
+                var pendingResult =
+                    LocationServices.SettingsApi.CheckLocationSettings(mGoogleApiClient, builder.Build());
+                pendingResult.SetResultCallback((LocationSettingsResult locationSettingsResult) =>
+                {
+                    if (locationSettingsResult != null)
+                    {
+                        returnAction(locationSettingsResult.Status.StatusCode <= CommonStatusCodes.Success);
+                    }
+                });
+                System.Diagnostics.Debug.WriteLine("End of IsLocationEnabled, clients should be created");
+            }
         }
 
         /// <summary>
@@ -556,7 +564,14 @@ namespace Plugin.Geofence
  
         async public void OnConnected(Bundle connectionHint)
         {
-            var location = await mFusedLocationProviderClient.GetLastLocationAsync();
+            FusedLocationProviderClient localClient = null;
+            lock (Lock)
+            {
+                // only need to ensure the initialization is done and lock is released
+                // before accessing mFusedLocationProviderClient which will be published by the initialization thread
+                localClient = mFusedLocationProviderClient;
+            }
+            var location = await localClient.GetLastLocationAsync();
             SetLastKnownLocation(location);
             if (CurrentRequestType == RequestType.Add)
             {

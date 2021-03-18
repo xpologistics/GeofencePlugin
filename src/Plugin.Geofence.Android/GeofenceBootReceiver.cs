@@ -18,8 +18,19 @@ namespace Plugin.Geofence
         /// <param name="intent"></param>
         public override void OnReceive(Context context, Intent intent)
         {
-            System.Diagnostics.Debug.WriteLine(string.Format("{0} - {1}", CrossGeofence.Id, "Boot Received"));
-            var geofenceInstance= CrossGeofence.Current;
+            try
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("{0} - {1}", CrossGeofence.Id, "Boot Received"));
+                var geofenceInstance= CrossGeofence.Current;
+            }
+            catch (Java.Lang.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("{0} - {1}", CrossGeofence.Id, ex.ToString()));
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("{0} - {1}", CrossGeofence.Id, ex.ToString()));
+            }
         }
     }
 }
